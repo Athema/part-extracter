@@ -343,6 +343,288 @@ body {
   color: var(--text-muted);
 }
 
+/* ── Score card time label ── */
+.score-card-time {
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+}
+
+/* ── Waveform Editor ── */
+.waveform-editor {
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+.waveform-editor-header {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+}
+
+.waveform-title {
+  font-size: 1.1rem;
+  font-weight: 600;
+  margin-bottom: 0.3rem;
+}
+
+.waveform-subtitle {
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+/* Surface card that holds the waveform + toolbar */
+.waveform-surface {
+  background: var(--surface);
+  border-radius: 16px;
+  overflow: hidden;
+  border: 1px solid var(--border);
+}
+
+/* Loading overlay shown while WaveSurfer decodes */
+.waveform-loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 0.75rem;
+  padding: 2.5rem;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+}
+
+.waveform-loading .spinner {
+  margin: 0;
+}
+
+/* WaveSurfer mounts here */
+.waveform-container {
+  padding: 1rem 1rem 0;
+  transition: opacity 0.3s;
+  cursor: crosshair;
+}
+
+/* Toolbar row below the waveform */
+.waveform-toolbar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  padding: 0.75rem 1rem;
+  border-top: 1px solid var(--border);
+  flex-wrap: wrap;
+}
+
+.waveform-transport {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+}
+
+.transport-btn {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  color: var(--text);
+  border-radius: 6px;
+  width: 36px;
+  height: 36px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.95rem;
+  cursor: pointer;
+  transition: background 0.15s, border-color 0.15s;
+  flex-shrink: 0;
+}
+
+.transport-btn:hover {
+  background: var(--border);
+  border-color: var(--text-muted);
+}
+
+.transport-btn--play {
+  background: var(--accent);
+  border-color: var(--accent);
+  color: #fff;
+  width: 40px;
+  height: 40px;
+  font-size: 1rem;
+}
+
+.transport-btn--play:hover {
+  background: var(--accent-light);
+  border-color: var(--accent-light);
+}
+
+.waveform-time {
+  font-size: 0.82rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  letter-spacing: 0.02em;
+}
+
+.waveform-time-sep {
+  margin: 0 0.2em;
+  opacity: 0.5;
+}
+
+.waveform-hint {
+  font-size: 0.78rem;
+  color: var(--text-muted);
+  opacity: 0.7;
+  margin-left: auto;
+  white-space: nowrap;
+}
+
+/* ── Regions panel ── */
+.regions-panel {
+  background: var(--surface);
+  border-radius: 16px;
+  border: 1px solid var(--border);
+  overflow: hidden;
+}
+
+.regions-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 0.9rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+}
+
+.regions-panel-title {
+  font-size: 0.9rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.regions-count {
+  background: var(--accent);
+  color: #fff;
+  border-radius: 999px;
+  font-size: 0.72rem;
+  font-weight: 700;
+  padding: 0.1em 0.55em;
+  line-height: 1.6;
+}
+
+.regions-empty {
+  padding: 1.5rem 1.25rem;
+  color: var(--text-muted);
+  font-size: 0.85rem;
+  text-align: center;
+}
+
+.regions-list {
+  display: flex;
+  flex-direction: column;
+}
+
+/* ── Individual region row ── */
+.region-row {
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  padding: 0.7rem 1.25rem;
+  border-bottom: 1px solid var(--border);
+  transition: background 0.12s;
+}
+
+.region-row:last-child {
+  border-bottom: none;
+}
+
+.region-row:hover {
+  background: rgba(255, 255, 255, 0.025);
+}
+
+.region-color-dot {
+  width: 12px;
+  height: 12px;
+  border-radius: 50%;
+  flex-shrink: 0;
+}
+
+.region-label-input {
+  flex: 1;
+  min-width: 0;
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 0.875rem;
+  padding: 0.4rem 0.65rem;
+  transition: border-color 0.15s;
+  font-family: inherit;
+}
+
+.region-label-input:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.region-label-input::placeholder {
+  color: var(--text-muted);
+}
+
+.region-time {
+  font-size: 0.78rem;
+  font-variant-numeric: tabular-nums;
+  color: var(--text-muted);
+  white-space: nowrap;
+  flex-shrink: 0;
+  min-width: 7.5rem;
+  text-align: center;
+}
+
+.region-stem-select {
+  background: var(--surface2);
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  color: var(--text);
+  font-size: 0.875rem;
+  padding: 0.4rem 0.65rem;
+  cursor: pointer;
+  transition: border-color 0.15s;
+  font-family: inherit;
+  flex-shrink: 0;
+}
+
+.region-stem-select:focus {
+  outline: none;
+  border-color: var(--accent);
+}
+
+.region-delete-btn {
+  background: transparent;
+  border: 1px solid transparent;
+  color: var(--text-muted);
+  border-radius: 6px;
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 0.75rem;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: color 0.15s, border-color 0.15s, background 0.15s;
+}
+
+.region-delete-btn:hover {
+  color: var(--error);
+  border-color: var(--error);
+  background: rgba(248, 113, 113, 0.1);
+}
+
+/* ── Submit footer ── */
+.waveform-footer {
+  display: flex;
+  justify-content: flex-end;
+}
+
 /* ── Utilities ── */
 .mt-1 { margin-top: 0.5rem; }
 .mt-2 { margin-top: 1rem; }

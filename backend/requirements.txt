@@ -3,5 +3,6 @@ uvicorn[standard]>=0.24.0
 python-multipart>=0.0.6
 aiofiles>=23.2.1
 demucs>=4.0.0
+torchcodec
 basic-pitch>=0.3.6
 music21>=9.1.0

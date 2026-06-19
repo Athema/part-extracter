@@ -9,6 +9,7 @@ export default defineConfig({
       "/process": "http://localhost:8000",
       "/status": "http://localhost:8000",
       "/score": "http://localhost:8000",
+      "/audio": "http://localhost:8000",
     },
   },
 });
