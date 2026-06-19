@@ -59,7 +59,7 @@ jobs: Dict[str, dict] = {}
 
 class Region(BaseModel):
     label: str
-    stem: str
+    sound_type: str = "other"   # maps to preset (piano, brass, strings, etc.)
     start_time: float
     end_time: float
 
@@ -119,7 +119,7 @@ async def process_audio(request: ProcessRequest, background_tasks: BackgroundTas
         "regions": [
             {
                 "label": r.label,
-                "stem": r.stem,
+                "sound_type": r.sound_type,
                 "start_time": r.start_time,
                 "end_time": r.end_time,
                 "midi_path": None,
@@ -142,7 +142,7 @@ async def get_status(job_id: str):
     public_regions = [
         {
             "label": region["label"],
-            "stem": region["stem"],
+            "sound_type": region["sound_type"],
             "start_time": region["start_time"],
             "end_time": region["end_time"],
             "done": bool(region.get("midi_path")),
@@ -177,6 +177,8 @@ async def get_midi(job_id: str, region_index: int):
 
 
 async def run_job(job_id: str, audio_path: Path, regions: list[Region]):
+    from processing.filters import apply_bandpass, filter_midi
+    from processing.presets import get_preset
     from processing.separator import separate_stems
     from processing.transcriber import transcribe_stem
 
@@ -189,31 +191,50 @@ async def run_job(job_id: str, audio_path: Path, regions: list[Region]):
 
         for i, region in enumerate(regions):
             base_progress = 10 + i * step
+            preset = get_preset(region.sound_type)
+            stem = preset["stem"]
 
-            update("separating", f"Separating '{region.label}' with Demucs…", base_progress)
+            update("separating", f"[{region.label}] Separating with Demucs…", base_progress)
             stem_paths = await asyncio.to_thread(
-                separate_stems,
-                audio_path,
-                [region.stem],
-                region.start_time,
-                region.end_time,
-                region.label,
+                separate_stems, audio_path, [stem],
+                region.start_time, region.end_time, region.label,
             )
 
-            if region.stem not in stem_paths:
-                logger.warning(f"Stem '{region.stem}' not found for region '{region.label}'")
+            if stem not in stem_paths:
+                logger.warning(f"Stem '{stem}' not found for region '{region.label}'")
                 continue
 
-            update("transcribing", f"Transcribing '{region.label}' to MIDI…", base_progress + step // 2)
-            midi_path = await asyncio.to_thread(transcribe_stem, stem_paths[region.stem])
+            # Bandpass filter: strips bass bleed and high-end noise
+            update("filtering", f"[{region.label}] Applying {preset['low_cut_hz']}Hz–{preset['high_cut_hz']}Hz bandpass…", base_progress + step // 4)
+            filtered_path = stem_paths[stem].with_stem(stem_paths[stem].stem + "_bp")
+            await asyncio.to_thread(
+                apply_bandpass, stem_paths[stem],
+                preset["low_cut_hz"], preset["high_cut_hz"], filtered_path,
+            )
 
-            jobs[job_id]["regions"][i]["midi_path"] = str(midi_path)
-            logger.info(f"Region '{region.label}': MIDI at {midi_path}")
+            # Transcribe with preset-tuned thresholds
+            update("transcribing", f"[{region.label}] Transcribing to MIDI…", base_progress + step // 2)
+            midi_path = await asyncio.to_thread(
+                transcribe_stem, filtered_path,
+                preset["onset_threshold"],
+                preset["frame_threshold"],
+                preset["minimum_note_length"],
+            )
+
+            # Post-process: drop out-of-range and too-short notes
+            update("cleaning", f"[{region.label}] Filtering spurious notes…", base_progress + (3 * step) // 4)
+            clean_midi = await asyncio.to_thread(
+                filter_midi, midi_path,
+                preset["min_pitch"], preset["max_pitch"],
+                preset["minimum_note_length"],
+            )
+
+            jobs[job_id]["regions"][i]["midi_path"] = str(clean_midi)
+            logger.info(f"Region '{region.label}' done → {clean_midi}")
 
         done = sum(1 for r in jobs[job_id]["regions"] if r.get("midi_path"))
         jobs[job_id].update(
-            status="complete",
-            progress=100,
+            status="complete", progress=100,
             message=f"Done! {done} of {len(regions)} region(s) transcribed.",
         )
 

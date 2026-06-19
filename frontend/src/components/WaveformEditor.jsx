@@ -2,13 +2,16 @@ import { useCallback, useEffect, useRef, useState } from "react";
 import WaveSurfer from "wavesurfer.js";
 import RegionsPlugin from "wavesurfer.js/dist/plugins/regions.esm.js";
 
-const STEMS = [
-  { id: "other",  label: "Keys / Other",  note: "Synths, pads, organs" },
-  { id: "piano",  label: "Piano",         note: "Acoustic/electric piano" },
-  { id: "guitar", label: "Guitar",        note: "" },
-  { id: "bass",   label: "Bass",          note: "" },
-  { id: "vocals", label: "Vocals",        note: "" },
-  { id: "drums",  label: "Drums",         note: "" },
+const SOUND_TYPES = [
+  { id: "piano",      label: "🎹 Piano",          note: "Acoustic / electric piano" },
+  { id: "organ",      label: "🎹 Organ",          note: "Hammond, pipe, etc." },
+  { id: "ep",         label: "🎹 Electric Piano", note: "Rhodes, Wurli, Clavinet" },
+  { id: "strings",    label: "🎻 Strings / Pads", note: "String pads, sweeps" },
+  { id: "brass",      label: "🎺 Brass",          note: "Horn stabs, pop brass" },
+  { id: "accordion",  label: "🪗 Accordion",      note: "Accordion, bandoneon" },
+  { id: "synth_lead", label: "🎛 Synth Lead",     note: "Lead synth, solo line" },
+  { id: "synth_pad",  label: "🎛 Synth Pad",      note: "Ambient pads, sweeps" },
+  { id: "other",      label: "🎼 Other Keys",     note: "Generic keyboard part" },
 ];
 
 // A palette of accent colors that look good on the dark theme
@@ -112,7 +115,7 @@ export default function WaveformEditor({ fileId, filename, audioUrl, onSubmit, o
         {
           id,
           label: `Region ${regionCounter}`,
-          stem: "other",
+          sound_type: "other",
           start: region.start,
           end: region.end,
           color: solid,
@@ -155,8 +158,8 @@ export default function WaveformEditor({ fileId, filename, audioUrl, onSubmit, o
     setRegionList((prev) => prev.map((r) => (r.id === id ? { ...r, label } : r)));
   }, []);
 
-  const updateStem = useCallback((id, stem) => {
-    setRegionList((prev) => prev.map((r) => (r.id === id ? { ...r, stem } : r)));
+  const updateSoundType = useCallback((id, sound_type) => {
+    setRegionList((prev) => prev.map((r) => (r.id === id ? { ...r, sound_type } : r)));
   }, []);
 
   const deleteRegion = useCallback((id) => {
@@ -192,7 +195,7 @@ export default function WaveformEditor({ fileId, filename, audioUrl, onSubmit, o
       {
         id: wsRegion.id,
         label: `Region ${regionCounter}`,
-        stem: "other",
+        sound_type: "other",
         start,
         end,
         color: solid,
@@ -206,7 +209,7 @@ export default function WaveformEditor({ fileId, filename, audioUrl, onSubmit, o
     setSubmitting(true);
     const payload = regionList.map((r) => ({
       label: r.label,
-      stem: r.stem,
+      sound_type: r.sound_type,
       start_time: parseFloat(r.start.toFixed(3)),
       end_time: parseFloat(r.end.toFixed(3)),
     }));
@@ -319,11 +322,11 @@ export default function WaveformEditor({ fileId, filename, audioUrl, onSubmit, o
                 </span>
                 <select
                   className="region-stem-select"
-                  value={r.stem}
-                  onChange={(e) => updateStem(r.id, e.target.value)}
-                  aria-label="Instrument"
+                  value={r.sound_type}
+                  onChange={(e) => updateSoundType(r.id, e.target.value)}
+                  aria-label="Sound type"
                 >
-                  {STEMS.map((s) => (
+                  {SOUND_TYPES.map((s) => (
                     <option key={s.id} value={s.id}>
                       {s.label}
                     </option>

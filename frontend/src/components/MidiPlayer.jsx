@@ -1,7 +1,15 @@
 import { useEffect, useRef, useState } from "react";
 
-const STEM_ICONS = {
-  other: "🎹", piano: "🎹", bass: "🎸", guitar: "🎸", vocals: "🎤", drums: "🥁",
+const SOUND_TYPE_ICONS = {
+  piano: "🎹", organ: "🎹", ep: "🎹",
+  strings: "🎻", brass: "🎺", accordion: "🪗",
+  synth_lead: "🎛", synth_pad: "🎛", other: "🎼",
+};
+
+const SOUND_TYPE_LABELS = {
+  piano: "Piano", organ: "Organ", ep: "Electric Piano",
+  strings: "Strings / Pads", brass: "Brass", accordion: "Accordion",
+  synth_lead: "Synth Lead", synth_pad: "Synth Pad", other: "Other Keys",
 };
 
 function formatTime(secs) {
@@ -104,7 +112,8 @@ export default function MidiPlayer({ jobId, regionIndex, region }) {
   }
 
   const progress = duration > 0 ? Math.min((elapsed / duration) * 100, 100) : 0;
-  const icon = STEM_ICONS[region.stem] ?? "🎼";
+  const icon = SOUND_TYPE_ICONS[region.sound_type] ?? "🎼";
+  const soundLabel = SOUND_TYPE_LABELS[region.sound_type] ?? region.sound_type ?? "Other Keys";
   const timeRange = `${formatTime(region.start_time)} – ${formatTime(region.end_time)}`;
 
   return (
@@ -114,7 +123,7 @@ export default function MidiPlayer({ jobId, regionIndex, region }) {
           <span>{icon}</span>
           <div>
             <div className="midi-label">{region.label}</div>
-            <div className="midi-meta">{timeRange} · {region.stem}</div>
+            <div className="midi-meta">{timeRange} · {soundLabel}</div>
           </div>
         </div>
         <div className="midi-actions">

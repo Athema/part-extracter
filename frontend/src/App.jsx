@@ -48,7 +48,7 @@ export default function App() {
     setPhase("waveform");
   }, []);
 
-  // regions: [{ label, stem, start_time, end_time }]
+  // regions: [{ label, sound_type, start_time, end_time }]
   const handleSubmit = useCallback(async (regions) => {
     setPhase("processing");
     setJobData({ status: "queued", progress: 0, message: "Starting…" });
