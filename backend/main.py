@@ -1,3 +1,11 @@
+import os
+import sys
+
+# Make FFmpeg DLLs findable for torchcodec before any audio library is imported
+_ffmpeg_bin = r"C:\ffmpeg\bin"
+if os.path.isdir(_ffmpeg_bin) and _ffmpeg_bin not in os.environ.get("PATH", ""):
+    os.environ["PATH"] = _ffmpeg_bin + os.pathsep + os.environ["PATH"]
+
 import uuid
 import asyncio
 import logging
@@ -114,7 +122,7 @@ async def process_audio(request: ProcessRequest, background_tasks: BackgroundTas
                 "stem": r.stem,
                 "start_time": r.start_time,
                 "end_time": r.end_time,
-                "snippets": [],
+                "midi_path": None,
             }
             for r in request.regions
         ],
@@ -131,21 +139,13 @@ async def get_status(job_id: str):
 
     job = jobs[job_id]
 
-    # Strip internal file paths from snippets before returning to client
     public_regions = [
         {
             "label": region["label"],
             "stem": region["stem"],
             "start_time": region["start_time"],
             "end_time": region["end_time"],
-            "snippets": [
-                {
-                    "label": s["label"],
-                    "start_bar": s["start_bar"],
-                    "end_bar": s["end_bar"],
-                }
-                for s in region["snippets"]
-            ],
+            "done": bool(region.get("midi_path")),
         }
         for region in job["regions"]
     ]
@@ -158,38 +158,25 @@ async def get_status(job_id: str):
     }
 
 
-@app.get("/score/{job_id}/{region_index}/{snippet_index}")
-async def get_score(job_id: str, region_index: int, snippet_index: int):
+@app.get("/midi/{job_id}/{region_index}")
+async def get_midi(job_id: str, region_index: int):
     if job_id not in jobs:
         raise HTTPException(status_code=404, detail="Job not found")
 
-    job = jobs[job_id]
-    regions = job.get("regions", [])
-
+    regions = jobs[job_id].get("regions", [])
     if region_index >= len(regions):
         raise HTTPException(status_code=404, detail="Region not found")
 
     region = regions[region_index]
-    snippets = region.get("snippets", [])
+    midi_path = region.get("midi_path")
+    if not midi_path or not Path(midi_path).exists():
+        raise HTTPException(status_code=404, detail="MIDI not ready")
 
-    if snippet_index >= len(snippets):
-        raise HTTPException(status_code=404, detail="Snippet not found")
-
-    pdf_path = Path(snippets[snippet_index]["path"])
-    if not pdf_path.exists():
-        raise HTTPException(status_code=404, detail="PDF file not found")
-
-    safe_label = snippets[snippet_index]["label"].replace(" ", "_").replace("–", "-")
-    safe_region = region["label"].replace(" ", "_")
-    return FileResponse(
-        pdf_path,
-        media_type="application/pdf",
-        filename=f"{safe_region}_{safe_label}.pdf",
-    )
+    safe_name = region["label"].replace(" ", "_") + ".mid"
+    return FileResponse(Path(midi_path), media_type="audio/midi", filename=safe_name)
 
 
 async def run_job(job_id: str, audio_path: Path, regions: list[Region]):
-    from processing.scorer import generate_score
     from processing.separator import separate_stems
     from processing.transcriber import transcribe_stem
 
@@ -203,11 +190,7 @@ async def run_job(job_id: str, audio_path: Path, regions: list[Region]):
         for i, region in enumerate(regions):
             base_progress = 10 + i * step
 
-            update(
-                "separating",
-                f"Separating '{region.label}' with Demucs…",
-                base_progress,
-            )
+            update("separating", f"Separating '{region.label}' with Demucs…", base_progress)
             stem_paths = await asyncio.to_thread(
                 separate_stems,
                 audio_path,
@@ -218,41 +201,20 @@ async def run_job(job_id: str, audio_path: Path, regions: list[Region]):
             )
 
             if region.stem not in stem_paths:
-                logger.warning(
-                    f"Stem '{region.stem}' not found in Demucs output for region '{region.label}'"
-                )
+                logger.warning(f"Stem '{region.stem}' not found for region '{region.label}'")
                 continue
 
-            update(
-                "transcribing",
-                f"Transcribing '{region.label}' to MIDI…",
-                base_progress + step // 3,
-            )
+            update("transcribing", f"Transcribing '{region.label}' to MIDI…", base_progress + step // 2)
             midi_path = await asyncio.to_thread(transcribe_stem, stem_paths[region.stem])
 
-            update(
-                "scoring",
-                f"Generating score for '{region.label}'…",
-                base_progress + (2 * step) // 3,
-            )
-            snippets = await asyncio.to_thread(generate_score, midi_path, region.stem)
+            jobs[job_id]["regions"][i]["midi_path"] = str(midi_path)
+            logger.info(f"Region '{region.label}': MIDI at {midi_path}")
 
-            # Store snippets (including internal path) in the job
-            jobs[job_id]["regions"][i]["snippets"] = snippets
-
-            logger.info(
-                f"Region '{region.label}': {len(snippets)} snippet(s) generated"
-            )
-
-        completed_regions = sum(
-            1
-            for r in jobs[job_id]["regions"]
-            if r["snippets"]
-        )
+        done = sum(1 for r in jobs[job_id]["regions"] if r.get("midi_path"))
         jobs[job_id].update(
             status="complete",
             progress=100,
-            message=f"Done! Processed {completed_regions} of {len(regions)} region(s).",
+            message=f"Done! {done} of {len(regions)} region(s) transcribed.",
         )
 
     except Exception as exc:
