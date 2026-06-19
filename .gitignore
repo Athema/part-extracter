@@ -21,6 +21,9 @@ frontend/.vite/
 .DS_Store
 Thumbs.db
 
+# Claude worktrees (agent scratch space)
+.claude/worktrees/
+
 # IDE
 .vscode/settings.json
 .idea/
